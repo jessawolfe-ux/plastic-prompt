@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>plastic prompt · pick a colour</title>
+<style>
+  :root { --c:#ff8a2a; --c2:#ff5a00; --ink:#1a1a1a; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; font:14px/1.4 -apple-system, "SF Pro Text", system-ui, sans-serif; color:#222;
+    background:
+      radial-gradient(60% 50% at 20% 20%, #ffd6e0 0%, transparent 60%),
+      radial-gradient(50% 60% at 80% 30%, #cfe6ff 0%, transparent 60%),
+      radial-gradient(60% 60% at 50% 90%, #fff3c4 0%, transparent 60%),
+      #ece7df; }
+  .wrap { max-width:1100px; margin:0 auto; padding:48px 32px 96px; }
+  h1 { font-size:14px; font-weight:600; color:#6a645c; margin:0 0 10px; letter-spacing:.02em; }
+  .tools { display:flex; gap:10px; margin:0 0 28px; }
+  .tools button { font:12px/1 inherit; letter-spacing:.06em; text-transform:uppercase; padding:9px 14px; border-radius:16px; border:1px solid rgba(0,0,0,.12); background:rgba(255,255,255,.6); color:#444; cursor:pointer; }
+  .grid { display:grid; gap:36px; }
+  .row { display:flex; align-items:flex-end; gap:28px; }
+  .row .label { align-self:center; width:120px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#6a645c; }
+  .unit { display:flex; flex-direction:column; gap:12px; width:460px; }
+
+  /* ---- plastic (shared by screen + pill) ---- */
+  .plastic { position:relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.10) 38%, rgba(255,255,255,0) 50%, rgba(0,0,0,.06) 100%),
+      color-mix(in srgb, var(--c) 62%, transparent);
+    backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    box-shadow:
+      inset 0 0 0 1.5px rgba(255,255,255,.55),
+      inset 0 -10px 18px color-mix(in srgb, var(--c2) 45%, transparent),
+      inset 0 2px 0 rgba(255,255,255,.9),
+      0 1px 0 rgba(255,255,255,.6),
+      0 14px 30px -8px color-mix(in srgb, var(--c2) 55%, transparent),
+      0 2px 6px rgba(0,0,0,.12); }
+  .plastic::before { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    box-shadow: inset 0 0 0 6px color-mix(in srgb, var(--c2) 28%, transparent), inset 0 0 14px color-mix(in srgb, var(--c2) 35%, transparent); }
+  .plastic::after { content:""; position:absolute; left:22px; right:22px; top:5px; height:12px; border-radius:8px; pointer-events:none;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.75) 20%, rgba(255,255,255,.75) 75%, rgba(255,255,255,0)); filter:blur(2px); opacity:.8; }
+
+  .screen { height:230px; border-radius:26px; padding:12px; }
+  .widget { height:64px; border-radius:32px; display:flex; align-items:center; gap:10px; padding:0 10px 0 16px; }
+  .widget::after { right:60px; top:5px; height:16px; }
+
+  /* ---- the CRT ---- */
+  .crt { position:relative; z-index:1; height:100%; border-radius:16px; overflow:hidden; background:#000;
+    box-shadow: inset 0 3px 8px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.25); }
+  .crt .desk { position:absolute; inset:0; padding:8px 8px 8px 8px;
+    /* OS 9 desktop: the quiet blue-grey pattern behind the window */
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, #6f86b8, #5a73a8); }
+  /* glass: reflection, vignette, scanlines */
+  .crt .glass { position:absolute; inset:0; pointer-events:none; z-index:5; border-radius:16px;
+    background:
+      radial-gradient(70% 55% at 12% 0%, rgba(255,255,255,.38), rgba(255,255,255,0) 60%),
+      radial-gradient(100% 100% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.28) 100%),
+      repeating-linear-gradient(180deg, rgba(0,0,0,.10) 0 1px, rgba(0,0,0,0) 1px 3px); }
+  .crt .glass::after { content:""; position:absolute; inset:0; border-radius:16px; box-shadow: inset 0 0 22px rgba(0,0,0,.35); }
+
+  /* ---- Platinum window ---- */
+  .win { position:relative; height:100%; display:flex; flex-direction:column; background:#fff; border:1px solid #000;
+    box-shadow: 1px 1px 0 #000, inset 1px 1px 0 #fff; font:12px/1.35 Geneva, Verdana, "DejaVu Sans", sans-serif; color:#000; }
+  .tb { position:relative; height:20px; flex:none; display:flex; align-items:center; border-bottom:1px solid #000; background:#ddd;
+    background-image: repeating-linear-gradient(180deg, #fff 0 1px, #ddd 1px 2px); background-origin:content-box; padding:3px 0; }
+  .tb .box { width:11px; height:11px; border:1px solid #333; background:#ddd; margin:0 6px; flex:none;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999; }
+  .tb .box.close { margin-left:6px; }
+  .tb .box.zoom::after { content:""; display:block; width:5px; height:5px; border:1px solid #333; border-right:0; border-bottom:0; margin:1px; }
+  .tb .box.collapse::after { content:""; display:block; height:1px; background:#333; margin:4px 1px; }
+  .tb .title { flex:1; text-align:center; font:bold 12px/14px Charcoal, Chicago, Geneva, Verdana, sans-serif; letter-spacing:.01em; }
+  .tb .title span { background:#ddd; padding:0 6px; }
+  .body { flex:1; display:flex; min-height:0; }
+  .log { flex:1; padding:6px 8px; overflow-y:auto; scrollbar-width:none; display:flex; flex-direction:column; justify-content:flex-end; gap:3px; }
+  .log::-webkit-scrollbar { display:none; }
+  .log p { margin:0; }
+  .log .t { color:#777; font-size:10px; }
+  .log .me { color:#d41a1a; font-weight:bold; }
+  .log .ai { color:#1a2fd6; font-weight:bold; }
+  .log .sys { color:#666; font-style:italic; }
+  /* OS 9 scrollbar */
+  .sb { width:16px; flex:none; border-left:1px solid #000; display:flex; flex-direction:column; background:repeating-linear-gradient(180deg, #ddd 0 1px, #fff 1px 2px); }
+  .sb .arr { height:16px; flex:none; background:#ddd; border-bottom:1px solid #000; display:grid; place-items:center; box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999; }
+  .sb .arr.dn { border-bottom:0; border-top:1px solid #000; }
+  .sb .arr::after { content:""; width:0; height:0; border:4px solid transparent; border-bottom:5px solid #000; margin-top:-4px; }
+  .sb .arr.dn::after { border-bottom:4px solid transparent; border-top:5px solid #000; margin-top:4px; }
+  .sb .track { flex:1; position:relative; }
+  .sb .thumb { position:absolute; left:1px; right:1px; bottom:2px; height:46px; border:1px solid #1c3f8f; border-radius:1px;
+    background: linear-gradient(90deg, #7fa6e8, #4f7fd6 50%, #3b69c4); box-shadow: inset 1px 1px 0 #b7cdf3; }
+  .thumb::after { content:""; position:absolute; left:3px; right:3px; top:50%; height:7px; margin-top:-4px;
+    background: repeating-linear-gradient(180deg, #1c3f8f 0 1px, transparent 1px 2px, #dfe9fb 2px 3px, transparent 3px 4px); }
+  /* status line + watch */
+  .status { height:18px; flex:none; border-top:1px solid #000; background:#ddd; font-size:10px; display:flex; align-items:center; gap:6px; padding:0 6px; color:#333; }
+  .status .watch { width:12px; height:12px; display:none; }
+  .status.busy .watch { display:block; }
+  .status .watch .hand { transform-origin:6px 6.5px; animation: tick 1.2s steps(8) infinite; }
+  @keyframes tick { to { transform: rotate(360deg); } }
+  .status.busy .what::after { content:"…"; }
+
+  /* boot */
+  .boot { position:absolute; inset:0; z-index:4; display:grid; place-items:center; background:#c0c0c0;
+    background-image: radial-gradient(#9a9a9a .6px, transparent .7px); background-size:3px 3px; transition:opacity .4s ease; }
+  .boot.off { opacity:0; pointer-events:none; }
+  .boot svg { width:44px; height:52px; opacity:0; transform:scale(.9); transition: opacity .25s, transform .25s; }
+  .boot.mac svg { opacity:1; transform:none; }
+
+  /* ---- pill parts ---- */
+  .apple { width:20px; height:20px; flex:none; color:rgba(0,0,0,.5); mix-blend-mode:multiply; }
+  .field { flex:1; height:40px; border-radius:20px; border:0; padding:0 16px; font:15px/40px -apple-system, "SF Pro Text", system-ui, sans-serif; color:var(--ink);
+    background: rgba(255,255,255,.72);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.12), inset 0 0 0 1px rgba(0,0,0,.06), 0 1px 0 rgba(255,255,255,.7); outline:none; position:relative; z-index:1; }
+  .field::placeholder { color:rgba(0,0,0,.38); }
+  .go { width:44px; height:44px; border-radius:22px; flex:none; position:relative; z-index:1; cursor:pointer; border:0;
+    background:
+      radial-gradient(60% 45% at 50% 18%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%),
+      linear-gradient(180deg, color-mix(in srgb, var(--c) 70%, white) 0%, var(--c) 55%, var(--c2) 100%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.6), inset 0 -3px 6px color-mix(in srgb, var(--c2) 60%, black 10%), 0 3px 6px rgba(0,0,0,.18), 0 1px 0 rgba(255,255,255,.7);
+    display:grid; place-items:center; }
+  .go:active { transform:translateY(1px); }
+  .go svg { width:18px; height:18px; stroke:#fff; fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 1px 0 rgba(0,0,0,.25)); }
+
+  .tangerine { --c:#ff8a2a; --c2:#ff5a00; }
+  .blueberry { --c:#3aa0ff; --c2:#1a6ee0; }
+  .graphite  { --c:#8c93a0; --c2:#5a606c; }
+  .indigo    { --c:#5a63d8; --c2:#2f36a8; }
+  .keylime   { --c:#9be24a; --c2:#5fbf12; }
+  .bondi     { --c:#1fb5c9; --c2:#0b8ca6; }
+  .strawberry{ --c:#ff5fa2; --c2:#e8237a; }
+  .note { margin-top:40px; font-size:12px; color:#6a645c; max-width:520px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>the plastic prompt — which colour?</h1>
+  <div class="tools"><button id="reboot">replay boot + chime</button><button id="snd">sounds: on</button></div>
+  <div class="grid" id="grid"></div>
+  <p class="note">Type in any pill and press Return: your line lands in the log, Claude "types", a reply arrives with a sound. Send nothing and you get the error beep.</p>
+</div>
+<script>
+const colours = [['bondi','Bondi blue'],['strawberry','Strawberry'],['tangerine','Tangerine'],['blueberry','Blueberry'],['graphite','Graphite'],['indigo','Indigo'],['keylime','Key Lime']];
+const HAPPY = `<svg viewBox="0 0 44 52"><rect x="2" y="2" width="40" height="40" rx="4" fill="#e9e6d8" stroke="#333" stroke-width="2"/><rect x="8" y="8" width="28" height="22" fill="#fff" stroke="#333" stroke-width="2"/><rect x="6" y="42" width="32" height="7" rx="1" fill="#e9e6d8" stroke="#333" stroke-width="2"/><path d="M15 15v4M28 15v4M21 14v6h3" stroke="#333" stroke-width="2" fill="none"/><path d="M15 23q7 5 14 0" stroke="#333" stroke-width="2" fill="none"/></svg>`;
+const WATCH = `<svg class="watch" viewBox="0 0 12 13"><rect x="3.5" y="0" width="5" height="2" fill="#000"/><rect x="3.5" y="11" width="5" height="2" fill="#000"/><circle cx="6" cy="6.5" r="4.5" fill="#fff" stroke="#000"/><path class="hand" d="M6 6.5V3.4" stroke="#000" stroke-width="1.2"/><path d="M6 6.5h2.2" stroke="#000" stroke-width="1.2"/></svg>`;
+const ts = () => new Date().toLocaleTimeString('en-US');
+const REPLIES = ["Done. Anything else?", "On it. Give me a sec.", "Ok, that's live now.", "Opened it for you.", "Yep, I can do that. Pick a colour first though."];
+
+document.getElementById('grid').innerHTML = colours.map(([k,n]) => `
+  <div class="row">
+    <div class="label">${n}</div>
+    <div class="unit ${k}">
+      <div class="screen plastic"><div class="crt">
+        <div class="desk"><div class="win">
+          <div class="tb"><div class="box close"></div><div class="title"><span>Claude</span></div><div class="box zoom"></div><div class="box collapse"></div></div>
+          <div class="body">
+            <div class="log">
+              <p><span class="t">(12:47:58 PM)</span> <span class="me">jessa:</span> you open my videos folder on my computer</p>
+              <p><span class="t">(12:48:02 PM)</span> <span class="ai">Claude:</span> Done, the Movies folder is open in Finder. That's where Recorder saves its files.</p>
+              <p><span class="t">(12:49:10 PM)</span> <span class="me">jessa:</span> what else can we do to make it look like an old mac</p>
+              <p><span class="t">(12:49:14 PM)</span> <span class="ai">Claude:</span> like this.</p>
+            </div>
+            <div class="sb"><div class="arr"></div><div class="track"><div class="thumb"></div></div><div class="arr dn"></div></div>
+          </div>
+          <div class="status">${WATCH}<span class="what">Claude is online</span></div>
+        </div></div>
+        <div class="glass"></div>
+        <div class="boot">${HAPPY}</div>
+      </div></div>
+      <div class="widget plastic">
+        <svg class="apple" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8C6.9 7.5 5.4 8.4 4.6 9.8c-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.4c.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.9-1.1-3-4.1zM14.1 5.9c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3z"/></svg>
+        <input class="field" placeholder="Message Claude…">
+        <button class="go" title="send"><svg viewBox="0 0 24 24"><path d="M12 19V6M6 12l6-6 6 6"/></svg></button>
+      </div>
+    </div>
+  </div>`).join('');
+
+/* ---- sounds, synthesized (the real AIM/Mac ones are copyrighted) ---- */
+let soundsOn = true, ac;
+const ctx = () => (ac ||= new (window.AudioContext || window.webkitAudioContext)());
+function tone(f, t0, dur, type='sine', g=.18, slide){ if(!soundsOn) return; const a=ctx(); const o=a.createOscillator(), v=a.createGain();
+  o.type=type; o.frequency.setValueAtTime(f, a.currentTime+t0); if(slide) o.frequency.exponentialRampToValueAtTime(slide, a.currentTime+t0+dur);
+  v.gain.setValueAtTime(0, a.currentTime+t0); v.gain.linearRampToValueAtTime(g, a.currentTime+t0+.01); v.gain.exponentialRampToValueAtTime(.0001, a.currentTime+t0+dur);
+  o.connect(v).connect(a.destination); o.start(a.currentTime+t0); o.stop(a.currentTime+t0+dur+.05); }
+const chime   = () => [261.6, 329.6, 392.0, 523.3, 659.3].forEach((f,i) => tone(f, i*.02, 2.2, 'triangle', .12));   // a soft major chord
+const bling   = () => { tone(880, 0, .12, 'square', .06); tone(1174.7, .12, .18, 'square', .06); };                  // "message in"
+const creak   = () => tone(140, 0, .35, 'sawtooth', .05, 420);                                                           // "door open" for sends
+const click   = (deep) => { if(!soundsOn) return; const a=ctx(); const n=a.createBufferSource(), len=Math.floor(a.sampleRate*(deep?.035:.018)), buf=a.createBuffer(1,len,a.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(len*.18)); n.buffer=buf;
+  const f=a.createBiquadFilter(); f.type='bandpass'; f.frequency.value=(deep?900:1900)+Math.random()*(deep?300:900); f.Q.value=1.2;
+  const v=a.createGain(); v.gain.value=deep?.5:.35; n.connect(f).connect(v).connect(a.destination); n.start();
+  tone(deep?520:2400+Math.random()*500, 0, deep?.03:.012, 'sine', deep?.06:.04); };
+const sosumi  = () => { tone(740, 0, .07, 'square', .08); tone(740, .09, .07, 'square', .08); tone(600, .18, .2, 'square', .08); };
+
+/* ---- boot ---- */
+function boot(unit, withChime){
+  const b = unit.querySelector('.boot'); b.classList.remove('off','mac');
+  setTimeout(() => { b.classList.add('mac'); if (withChime) chime(); }, 500);
+  setTimeout(() => b.classList.add('off'), 2100);
+}
+document.querySelectorAll('.unit').forEach((u, i) => setTimeout(() => boot(u, false), i*120));
+document.getElementById('reboot').onclick = () => { ctx(); document.querySelectorAll('.unit').forEach((u, i) => setTimeout(() => boot(u, i===0), i*120)); };
+document.getElementById('snd').onclick = e => { soundsOn = !soundsOn; e.target.textContent = `sounds: ${soundsOn ? 'on' : 'off'}`; };
+
+/* ---- send demo ---- */
+function line(log, who, text, cls){ const p = document.createElement('p'); p.innerHTML = `<span class="t">(${ts()})</span> <span class="${cls}">${who}:</span> ${text}`; log.appendChild(p); log.scrollTop = log.scrollHeight; }
+document.querySelectorAll('.unit').forEach(u => {
+  const f = u.querySelector('.field'), log = u.querySelector('.log'), st = u.querySelector('.status'), what = u.querySelector('.what');
+  const send = () => {
+    const t = f.value.trim();
+    if (!t) { sosumi(); what.textContent = 'Type something first'; setTimeout(() => what.textContent = 'Claude is online', 1600); return; }
+    creak(); line(log, 'jessa', t.replace(/</g,'&lt;'), 'me'); f.value = '';
+    st.classList.add('busy'); what.textContent = 'Claude is typing';
+    setTimeout(() => { what.textContent = 'Reading your message'; }, 600);
+    setTimeout(() => { st.classList.remove('busy'); what.textContent = 'Claude is online'; line(log, 'Claude', REPLIES[Math.floor(Math.random()*REPLIES.length)], 'ai'); bling(); }, 1900);
+  };
+  f.addEventListener('keydown', e => { if (e.key === 'Enter') { send(); return; } if (e.key.length === 1 || e.key === 'Backspace') click(e.key === ' ' || e.key === 'Backspace'); });
+  u.querySelector('.go').onclick = send;
+});
+</script>
+</body>
+</html>

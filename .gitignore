@@ -1,0 +1,12 @@
+Plastic Prompt.app
+build/
+sfx/_raw/
+sfx/hits/
+sfx/compare.html
+*.before-*.swift
+compare.before-*
+icon/*.iconset/
+icon/app.icns
+wins
+.DS_Store
+click
