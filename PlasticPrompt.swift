@@ -893,7 +893,7 @@ final class App: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSMenuDel
         """)
         if let e = front.err { failed(e); return }
         let live = claudeTTYs()
-        if let c = current, live.contains(c.tty) { if c.tty != front.out, let e = focusTTY(c.tty) { failed(e); return }; paste(text); return }
+        if let c = current, live.contains(c.tty) { if !quiet, c.tty != front.out, let e = focusTTY(c.tty) { failed(e); return }; paste(text); return }
         if live.contains(front.out) { paste(text); return }
         if let tty = live.first { if let e = focusTTY(tty) { failed(e); return }; paste(text); return }
         // no Claude running: open Terminal with one, then paste
@@ -912,21 +912,24 @@ final class App: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSMenuDel
         pb.clearContents(); pb.setString(text, forType: .string)
         let mine = pb.changeCount
         var r: (out: String, err: NSDictionary?) = ("", nil)
-        if quiet, let term = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Terminal").first {
-            // key events posted straight to Terminal's process: it never comes forward
-            func tap(_ key: CGKeyCode, cmd: Bool) {
-                let src = CGEventSource(stateID: .combinedSessionState)
-                guard let d = CGEvent(keyboardEventSource: src, virtualKey: key, keyDown: true), let u = CGEvent(keyboardEventSource: src, virtualKey: key, keyDown: false) else { return }
-                if cmd { d.flags = .maskCommand; u.flags = .maskCommand }
-                d.postToPid(term.processIdentifier); u.postToPid(term.processIdentifier)
-            }
-            // let go of the keyboard while the keys are posted (the delivery only worked with the pill not key), then take the cursor back
-            panel.resignKey()
-            log("quiet send to Terminal pid \(term.processIdentifier), trusted \(AXIsProcessTrusted())")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { tap(9, cmd: true) }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { tap(36, cmd: false) }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in guard let self else { return }; self.panel.makeKeyAndOrderFront(nil); self.panel.makeFirstResponder(self.field) }
-            if !AXIsProcessTrusted() { r.err = [NSAppleScript.errorNumber: 1002, NSAppleScript.errorMessage: "Accessibility is off"] }
+        if quiet, let tty = current?.tty ?? claudeTTYs().first {
+            // Terminal writes the line straight into that tab's terminal (its own `do script`): no window comes forward, no key events, no Accessibility
+            let esc = text.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            log("quiet send to \(tty)")
+            r = run("""
+            tell application "Terminal"
+                repeat with w in windows
+                    repeat with t in tabs of w
+                        if tty of t is "\(tty)" then
+                            do script "\(esc)" in t
+                            return "ok"
+                        end if
+                    end repeat
+                end repeat
+                return "no tab"
+            end tell
+            """)
+            if r.err == nil && r.out != "ok" { r.err = [NSAppleScript.errorNumber: 1, NSAppleScript.errorMessage: "That Claude tab is gone"] }
         } else {
             r = run("""
             tell application "Terminal" to activate

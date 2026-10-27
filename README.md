@@ -59,7 +59,7 @@ The installer will:
 
 Two, once:
 
-- **Accessibility:** System Settings → Privacy & Security → Accessibility → turn on **Plastic Prompt**. This is how it types into Terminal without bringing Terminal forward.
+- **Accessibility** (only if you turn on *Bring Terminal forward when sending* in the menu): System Settings → Privacy & Security → Accessibility → turn on **Plastic Prompt**. The normal, quiet way of sending doesn't need it: Terminal writes the line into the Claude tab itself.
 - **Automation:** the first time you send a message, macOS asks to let Plastic Prompt control **Terminal** and **System Events**. Say OK to both.
 
 The app is signed with a certificate the installer makes just for your Mac (kept in your login keychain), so macOS remembers these permissions through rebuilds and updates.
